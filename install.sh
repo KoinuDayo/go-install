@@ -116,14 +116,15 @@ install_go() {
     [[ $MACHINE == amd64 ]] && GO_MACHINE=amd64
     [[ $MACHINE == arm ]] && GO_MACHINE=armv6l
     [[ $MACHINE == arm64 ]] && GO_MACHINE=arm64
-    [[ -z $REPLAYCE_PATH ]] && REPLAYCE_PATH=/usr/lib
+    [[ -z $REPLAYCE_PATH ]] && check_root && REPLAYCE_PATH=/usr/lib
+    ! [ -w $REPLAYCE_PATH ] && echo -e "\033[1;31m\033[1mERROR:\033[0m No permission to write $PREFIX."
     if [[ $GO_MACHINE == amd64 ]] || [[ $GO_MACHINE == arm64 ]] || [[ $GO_MACHINE == armv6l ]] || [[ $GO_MACHINE == 386 ]]; then
         echo -e "INFO: Installing GO" 
         curl -o /tmp/go.tar.gz https://go.dev/dl/go$GO_VERSION.linux-$GO_MACHINE.tar.gz
         rm -rf $REPLAYCE_PATH/go # && echo -e "DEBUG: Deleted current GO"
         tar -C $REPLAYCE_PATH -xzf /tmp/go.tar.gz # && echo -e "DEBUG: Replaced GO"
         rm /tmp/go.tar.gz
-        ln -sf $REPLAYCE_PATH/go/bin/go /usr/sbin/go # && echo -e "DEBUG: Soft link created"
+        [ $EUID == 0 ] && ln -sf $REPLAYCE_PATH/go/bin/go /usr/local/bin/go # && echo -e "DEBUG: Soft link created"
         go version
         GO_PATH=$(type -P go)
     else
@@ -174,7 +175,6 @@ find_go() {
 }
 
 main() {
-    check_root
     identify_the_operating_system_and_architecture
     find_go
     GO_VERSION=$(curl -sL https://golang.org/VERSION?m=text | head -1 | sed -n 's/.*\([0-9]\+\.[0-9]\+\.[0-9]\+\).*/\1/p')
